@@ -108,6 +108,9 @@ if ($ballot_reporting eq 'yes') {
 	    my @result_addrs = split /(\r\n)+/, $result_addrs;
 	    $msg .= $tx->however_results_restricted([@result_addrs]);
 	}
+    }
+    if ($reveal_ballot_id eq 'yes') {
+	$msg .= $tx->ballot_ballot_id_will_be_visible();
     } else {
 	$msg .= $tx->ballot_will_be_anonymous();
     }
@@ -123,7 +126,10 @@ print '</div>', $cr;
 &voting::GenerateVoteForm($voter_key, $authorization_key, [@choice_index], [@rank], $js_ui, 0,
     ($ballot_reporting eq 'yes' && 
      $reveal_voters eq 'yes' &&
-     $public eq 'yes'));
+     $public eq 'yes'),
+    ($ballot_reporting eq 'yes' &&
+     $reveal_ballot_id eq 'yes')
+    );
 
 # if ($voting_enabled) {
 #   print '<p>Read rankings from a saved voting page: ';
@@ -188,6 +194,10 @@ sub ProcessVote {
 	if ($public eq 'yes') {
 	    $edata{"email_addr $voter_key"} = param('email_address');
 	}
+    }
+    if ($reveal_ballot_id eq 'yes') {
+	$vdata{"voter key of $ballot_key"} = $voter_key;
+	$edata{"ballot_id $voter_key"} = param('ballot_id');
     }
 
 	# Now, update matrix.

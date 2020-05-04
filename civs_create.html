@@ -253,7 +253,7 @@ Voters can also be added later.</p>
 </div>
 <div>
   <input type="checkbox" name="ballot_reporting" value="yes"
-         onClick="make_visible('reveal_voters')"
+         onClick="make_visible('reveal_voters');make_visible('reveal_ballot_id')"
 	 title="This option allows any poll participant to view the rankings on each ballot. However, identifying information about the voters who cast these ballots is not revealed unless the next option is checked.">
   Enable detailed ballot reporting. 
   <div class="suboption" id="reveal_voters">
@@ -262,6 +262,11 @@ Voters can also be added later.</p>
     ballot.<p class=emphasized>Voters are <i class="warning">not</i> anonymous if this is
     checked, nor does the server discard voter email addresses as it normally
     does.  Voters are warned about this lack of anonymity.</p>
+  </div>
+  <div class="suboption" id="reveal_ballot_id">
+    <input type="checkbox" name="reveal_ballot_id" value="yes" />
+    In detailed ballot report, also reveal the anonymous identifier of the voter with each
+    ballot.
   </div>
 </div>
 <div>
@@ -307,6 +312,7 @@ Voters can also be added later.</p>
     make_invisible('publicize');
     make_invisible('prcontrol');
     make_invisible('reveal_voters');
+    make_invisible('reveal_ballot_id');
     make_invisible('rrcontrol');
 </script>
 </body>

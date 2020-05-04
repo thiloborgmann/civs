@@ -29,6 +29,8 @@ if (!&CheckAddr($email_addr)) {
     print end_html();
     exit 0;
 }
+my $ballot_id = param('ballot_id');
+
 my $optouts = GetOptouts();
 if (HasOptOuts($optouts, $email_addr)) {
     HTML_Header($tx->Invalid_email_address_hdr);
@@ -108,6 +110,7 @@ $edata{'title'} = my $title = &Filter(param('title'));
 $edata{'description'} = &Filter(param('description'));
 $edata{'name'} = my $name = &Filter(param('name'));
 $edata{'email_addr'} = &Filter(param('email_addr'));
+$edata{'ballot_id'} = &Filter(param('ballot_id'));
 $edata{'num_winners'} = &Filter(param('num_winners'));
 $edata{'election_end'} = &Filter(param('election_end'));
 $edata{'election_begin'} = time();
@@ -155,6 +158,7 @@ $edata{'use_combined_ratings'} = $use_combined_ratings;
 
 SetBinaryParameter('ballot_reporting', 'no');
 SetBinaryParameter('reveal_voters', 'no');
+SetBinaryParameter('reveal_ballot_id', 'no');
 
 my $restrict_results = SetBinaryParameter('restrict_results', 'no');
 my $result_addrs;

@@ -27,7 +27,7 @@ BEGIN {
     $election_end $public $publicize $writeins $allow_voting $voting_enabled
     $shuffle $proportional $external_ballots
     $use_combined_ratings $choices @choices $num_choices $num_auth $num_votes
-    $recorded_voters $ballot_reporting $reveal_voters $authorization_key
+    $recorded_voters $ballot_reporting $reveal_voters $reveal_ballot_id $authorization_key
     %used_voter_keys $restrict_results $result_addrs $hash_result_key $no_opinion
     $close_time $last_vote_time $election_begin $email_load
     %voter_keys %edata %vdata);
@@ -51,7 +51,7 @@ our ($name, $title, $email_addr, $description, $num_winners, $addresses,
      @addresses, $election_begin, $election_end, $public, $publicize, $writeins, $allow_voting, $voting_enabled,
      $proportional, $use_combined_ratings, $external_ballots,
      $choices, @choices, $num_choices, $num_auth,
-     $num_votes, $recorded_voters, $ballot_reporting, $reveal_voters,
+     $num_votes, $recorded_voters, $ballot_reporting, $reveal_voters, $reveal_ballot_id,
      $authorization_key, $shuffle, $no_opinion, %voter_keys, %used_voter_keys,
      $restrict_results, $result_addrs, $hash_result_key, $last_vote_time,
      $close_time, $email_load);
@@ -118,6 +118,7 @@ sub init {
     $ballot_reporting = $edata{'ballot_reporting'} or $ballot_reporting = '';
     $external_ballots = $edata{'external_ballots'} or $external_ballots = 'no';
     $reveal_voters = $edata{'reveal_voters'} or $reveal_voters = '';
+    $reveal_ballot_id = $edata{'reveal_ballot_id'} or $reveal_ballot_id = '';
     $restrict_results = $edata{'restrict_results'};
     $result_addrs = $edata{'result_addrs'};
     $hash_result_key = 0;
