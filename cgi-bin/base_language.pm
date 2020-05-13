@@ -447,7 +447,7 @@ sub Identifier_request {
 
 sub Identifier_request_anonymous_ballot_id {
     "<p style=\"text-align:center\">Ballot ID:  \r\n".
-    '<input type="text" name="ballot_id" size="50"></p>'.
+    '<input type="number" name="ballot_id" size="50"></p>'.
     "\r\n"
 }
 
@@ -477,7 +477,7 @@ sub however_results_restricted {
 }
 
 sub ballot_ballot_id_will_be_visible {
-    ' You can optionally assign a self-defined ballot ID to your ballot that will appear in the poll results to identify your own ballot.
+    ' You can optionally assign a self-defined ballot ID (numbers only) to your ballot that will appear in the poll results to identify your own ballot.
       However, your ballot will still be anonymous:
       only this self-defined ballot ID will show up but no personally identifying information will appear.'
 }
