@@ -184,9 +184,11 @@ sub rank_candidates {
 # Print out to RESULTS the details of the election algorithm, using the
 # information in $log that was returned by rank_candidates.
 sub print_details {
-    (my $log) = @_;
+    (my $log, my $num_choices, my $choices_ref, my $ciref) = @_;
 
-    print main::RESULTS $log;
+    print main::RESULTS main::p("Candidate in order: @$choices_ref");
+
+    print main::RESULTS main::p($log);
 }
 
 1; # ok!
