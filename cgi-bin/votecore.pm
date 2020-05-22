@@ -186,7 +186,7 @@ sub rank_candidates {
 sub print_details {
     (my $log, my $num_choices, my $choices_ref, my $ciref) = @_;
 
-    print main::RESULTS main::p("Candidate in order: @$choices_ref");
+    print main::RESULTS main::p("Candidates in original order: @$choices_ref");
 
     print main::RESULTS main::p($log);
 }
