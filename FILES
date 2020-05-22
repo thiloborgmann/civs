@@ -48,6 +48,7 @@ civs/cgi-bin/thai.pm
 civs/cgi-bin/top_polls.pm
 civs/cgi-bin/upload_ballots
 civs/cgi-bin/vote
+civs/cgi-bin/votecore.pm
 civs/cgi-bin/voting.pm
 civs/changelog.html
 civs/changelog.html.var

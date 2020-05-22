@@ -19,6 +19,7 @@ use beatpath2;
 use rp;
 use runoff;
 use minimax;
+use votecore;
 
 my $thisurl = $civs_bin_path."/results@PERLEXT@";
 
@@ -26,17 +27,19 @@ my $thisurl = $civs_bin_path."/results@PERLEXT@";
 my %algorithms = ('beatpath_winner', 'beatpath', # obsolete
                   'beatpath', 'beatpath2',
                   'civs_ranked_pairs', 'rp',
-		  'mam', 'rp',
-		  'runoff', 'runoff',
-                  'minimax', 'minimax');
+                  'mam', 'rp',
+                  'runoff', 'runoff',
+                  'minimax', 'minimax',
+                  'votecore', 'votecore');
 
 # maps legal algorithm modules to 1
 my %algorithm_modules = ('beatpath2', 1,
                          'rp', 1,
-			 'runoff', 1,
-                         'minimax', 1);
+                         'runoff', 1,
+                         'minimax', 1,
+                         'votecore', 1);
 
-my $default_algorithm = 'minimax';
+my $default_algorithm = 'votecore';
 
 # CheckLoad;
 # timeout(30);
@@ -151,7 +154,7 @@ sub Email {
 # These variables are global to the results computations.
 my ($condorcet_winner);
 my (@result, @matrix, @closure_matrix, @choice_index, @choice_rank);
-my (%visited); 
+my (%visited);
 
 # Start the progress meter (sends to STDOUT)
 sub StartProgressMeter {
@@ -255,6 +258,7 @@ sub ComputeResults {
     my $mam_checked = '';
     my $minimax_checked = '';
     my $runoff_checked = '';
+    my $votecore_checked = '';
     if ($algorithm eq 'civs_ranked_pairs') {
 	$rp_checked = $checked;
     } elsif ($algorithm eq 'mam') {
@@ -265,6 +269,8 @@ sub ComputeResults {
 	$minimax_checked = $checked;
     } elsif ($algorithm eq 'beatpath') {
 	$bw_checked = $checked;
+    } elsif ($algorithm eq 'votecore') {
+	$votecore_checked = $checked;
     } else {
 	$minimax_checked = $checked; # default
     }
@@ -301,7 +307,13 @@ sub ComputeResults {
 	    onclick="newSettings()"
 	    value="runoff"',
 	    $runoff_checked,
-	' /> Condorcet-IRV', BR;
+	' /> Condorcet-IRV', BR,
+	'<input type="radio"
+	    name="algorithm"
+	    onclick="newSettings()"
+	    value="votecore"',
+	    $votecore_checked,
+	' /> Python-Vote-Core: SchulzeSTV', BR;
 	print RESULTS '<input type="submit" id="recomplete" value="Update" />';
 
     print RESULTS '</blockquote></form></div>',$cr;
@@ -316,7 +328,7 @@ sub ComputeResults {
     if ($proportional eq 'yes') {
         &ComputeNonproportionalResults;
 	&PrintProportionalResults;
-    } else { 
+    } else {
 
 	print RESULTS h2($tx->Ranking_result), $cr;
 
@@ -385,9 +397,9 @@ sub PrintMatrix {
 sub DetailsHeader {
     # print RESULTS hr(),$cr;
     print RESULTS '<p id="show_details">',
-	$tx->some_result_details_not_shown, 
+	$tx->some_result_details_not_shown,
 	'<button onclick="show_details();">',
-	    $tx->Show_details, 
+	    $tx->Show_details,
 	'</button></p>', $cr;
 
     print RESULTS '<div id="details">';
@@ -420,7 +432,7 @@ sub BallotReport {
 		# ranks that the voter assigned to candidates.
 		# Element i of the list corresponds to candidate
 		# i.
-		my $recorded_vote = $vdata_copy{$ballot_key}; 
+		my $recorded_vote = $vdata_copy{$ballot_key};
 		if (!defined($recorded_vote)) {
 		    Log "Election $election_id ($title): Lost ballot for voter key $ballot_key?";
 		    next;
@@ -492,7 +504,7 @@ sub ComputeNonproportionalResults {
     # print pre('computing nonproportional results');
     if ($proportional eq 'yes') { NewProgressPhase(0.1); }
 
-    (my $rref, my $log) = 
+    (my $rref, my $log) =
 	&minimax::rank_candidates($num_choices, \@matrix, 0, \@choices);
 
     (my $ciref, my $crref) = &MakeChoiceIndex($rref);
@@ -581,6 +593,70 @@ sub PrintRanking {
     }
 }
 
+sub PrintRankingVotecore {
+    my @result = @{$_[0]};
+    my @matrix = @{$_[1]};
+    my $had_tie = 0;
+    print RESULTS '<table class="rankings">', $cr;
+    my $j = 0;
+    my $num_seen = 0;
+    for (my $rank = 0; $rank <= $#result; $rank++) {
+	my @winner = @{$result[$rank]};
+	# find the explanatory defeat
+	print RESULTS '<tr><td>'.($j+1).'. ';
+	my $ranksize = $#winner + 1;
+	if ($ranksize > 1) {
+	    print RESULTS $tx->Tied, br, $cr;
+	}
+	    my $tie;
+	if ($num_seen < $num_winners &&
+	    $num_seen + $ranksize > $num_winners) {
+	    $tie = 1;
+	    $had_tie = 1;
+	} else {
+	    $tie = 0;
+	}
+	for (my $i = 0; $i <= $#winner; $i++) {
+	    if ($i > 0) { print RESULTS '<br>', $cr; }
+	    if ($tie) { print RESULTS '<span class=warning>'; }
+	    my $explanation = '';
+	    if ($rank > 0) {
+		for (my $brank = $rank-1; $brank >= 0; $brank--) {
+		    my @pwinners = @{$result[$brank]};
+		    for (my $bi = 0; $bi <= $#pwinners; $bi++) {
+			if ($matrix[$pwinners[$bi]][$winner[$i]] >
+			    $matrix[$winner[$i]][$pwinners[$bi]] &&
+			    $pwinners[$bi] != $condorcet_winner) {
+			    $explanation = $tx->loss_explanation(
+				$choices[$pwinners[$bi]],
+				$matrix[$pwinners[$bi]][$winner[$i]],
+				$matrix[$winner[$i]][$pwinners[$bi]]);
+			    $brank = -1; last;
+			}
+		    }
+		}
+	    } else {
+		if ($winner[$i] == $condorcet_winner) {
+		    $explanation = $tx->Condorcet_winner_explanation;
+		} else {
+		    $explanation = $tx->undefeated_explanation;
+		}
+	    }
+	    if ($num_seen < $num_winners) {
+		print RESULTS b($choices[$winner[$i]]);
+	    } else {
+		print RESULTS $choices[$winner[$i]];
+	    }
+
+	    $choice_rank[$winner[$i]] = $j++;
+	}
+	$num_seen += $#winner + 1;
+	print RESULTS '</td>', $cr, '</tr>', $cr;
+    }
+    print RESULTS '</table>', $cr;
+}
+
+
 sub details_bookmark {
     return a({-name=>"details"}, "");
 }
@@ -605,7 +681,7 @@ sub ProcessBallots {
     my @voters = @{$_[0]};
     my @ballots = ();
     foreach my $voter_key (@voters) {
-	my $ballot = $vdata_copy{$voter_key}; 
+	my $ballot = $vdata_copy{$voter_key};
 	if (!defined($ballot)) {
 	    Log "Election $election_id ($title): Lost ballot for voter key $voter_key?";
 	} else {
@@ -629,19 +705,26 @@ sub PrintReport {
 	print RESULTS '</div>';
 	return;
     }
-
-    (my $rref, my $log) = 
+    (my $rref, my $log) =
 	&$rank_candidates($num_choices, \@matrix, $bref, \@choices);
 
     (my $ciref, my $crref) = &MakeChoiceIndex($rref);
-    
-    &PrintRanking($rref, \@matrix);
-    &DetailsHeader;
-      &PrintMatrix($num_choices, \@matrix, \@choices, $ciref, 0);
-      &BallotReport;
-      &$print_details($log, $num_choices, \@choices, $ciref);
-    &DetailsFooter;
-    &AdvertisePolls;
+
+    if ($module eq "votecore") {
+        &PrintRankingVotecore($rref, \@matrix);
+        &DetailsHeader;
+          &BallotReport;
+          &$print_details($log, $num_choices, \@choices, $ciref);
+        &DetailsFooter;
+    } else {
+        &PrintRanking($rref, \@matrix);
+        &DetailsHeader;
+          &PrintMatrix($num_choices, \@matrix, \@choices, $ciref, 0);
+          &BallotReport;
+          &$print_details($log, $num_choices, \@choices, $ciref);
+        &DetailsFooter;
+    }
+#    &AdvertisePolls;
 }
 
 sub AdvertisePolls {
@@ -942,7 +1025,7 @@ sub PrintProportionalResults {
 # effects: sets $tally1{c1}{c2} to the strong preference for c1 over c2
 #          sets $tally2{c1}{c2} to the strong preference for c2 over c1
 #          sets $weaktally1{c1}{c2}, $weaktally2{c1}{c2} correspondingly
-# requires: $beaten[0..$num_beaten-1] is a set of 
+# requires: $beaten[0..$num_beaten-1] is a set of
 #   committees known to be beaten (or matched) transitively by c
 	    $iters++;
 	    ReportProgress(sqrt(sqrt($iters/500.0)));
@@ -1115,7 +1198,7 @@ sub PrintProportionalResults {
     $num_unbeaten = $#cwinner + 1;
     if ($num_unbeaten == 1) {
 	print RESULTS h2("Winning set of choices".$cr);
-	print RESULTS p('The <a href="@CIVSURL@/proportional.html">apparent</a> winner of this poll was the set of choices (', 
+	print RESULTS p('The <a href="@CIVSURL@/proportional.html">apparent</a> winner of this poll was the set of choices (',
 	    flatten(renumber($committee[$cwinner[0]])), '):');
     } else {
 	print RESULTS h2("Winning sets of choices$cr");
@@ -1149,7 +1232,7 @@ sub PrintProportionalResults {
 
     print RESULTS p("There are $combinations possible sets of $num_winners choices
     that can be formed by selecting from the $num_choices choices. Of these,
-      $num_visited sets were considered thoroughly, comparing against 
+      $num_visited sets were considered thoroughly, comparing against
       the $num_seen nearby (similar) sets that differ
       in just one choice.$cr");
 
@@ -1159,7 +1242,7 @@ sub PrintProportionalResults {
 	     Fractional digits indicate nonproportional preferences, which
 	     help break ties in proportional preference.');
     STDOUT->flush();
-    
+
     for (my $j = 0; $j <= $#committee; $j++) {
 	$comm_choices[$j] = '('.flatten(renumber($committee[$j])).')';
     }
