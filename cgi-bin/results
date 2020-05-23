@@ -706,7 +706,7 @@ sub PrintReport {
 	return;
     }
     (my $rref, my $log) =
-	&$rank_candidates($num_choices, \@matrix, $bref, \@choices);
+	&$rank_candidates($num_choices, \@matrix, $bref, \@choices, $num_winners);
 
     (my $ciref, my $crref) = &MakeChoiceIndex($rref);
 

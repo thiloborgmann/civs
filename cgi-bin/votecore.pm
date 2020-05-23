@@ -112,7 +112,7 @@ sub get_idx {
 #     write-ins.
 #
 sub rank_candidates {
-    my ($n, $matrix, $ballots, $choices) = @_;
+    my ($n, $matrix, $ballots, $choices, $num_winners) = @_;
 
     my @rankings = ();
     my $log = '<ul>';
@@ -143,7 +143,7 @@ sub rank_candidates {
 
     $py_code .= "];\n";
     #$py_code .= "ret = SchulzePR(ballots, winner_threshold=3, ballot_notation = CondorcetHelper.BALLOT_NOTATION_GROUPING).as_json();\n";
-    $py_code .= "ret = SchulzeSTV(ballots, required_winners=3, ballot_notation = CondorcetHelper.BALLOT_NOTATION_GROUPING).as_json();\n";
+    $py_code .= "ret = SchulzeSTV(ballots, required_winners=$num_winners, ballot_notation = CondorcetHelper.BALLOT_NOTATION_GROUPING).as_json();\n";
     $py_code .= "print(ret);\n";
 
     #print main::RESULTS "$py_code";
