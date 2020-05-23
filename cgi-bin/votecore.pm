@@ -134,7 +134,7 @@ sub rank_candidates {
             if ($i > 0) {
                 $py_code .= ", ";
             }
-            $py_code .= "[\"$choices->[$c_size - $c]\"]"; # not eq to display in table of results page but reversed indices?
+            $py_code .= "[\"$choices->[$c - 1]\"]";
 
             $i = $i + 1;
         }
