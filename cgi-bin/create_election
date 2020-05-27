@@ -18,6 +18,13 @@ my $thisurl = $civs_bin_path."/create_election@PERLEXT@";
 my $mail_mgmt_url = "@PROTO@://$thishost$civs_bin_path/mail_mgmt@PERLEXT@";
 
 ### Initial parameter checking
+if (param('key') ne '@ADMIN_KEY@') {
+    HTML_Header($tx->CIVS_Poll_Creation);
+    CIVS_Header();
+    print p("Password missing or wrong");
+    print end_html();
+    exit 0;
+}
 
 my $email_addr = param('email_addr');
 $email_addr = mail::TrimAddr($email_addr);
