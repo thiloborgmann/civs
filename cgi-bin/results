@@ -20,6 +20,7 @@ use rp;
 use runoff;
 use minimax;
 use votecore;
+use cschulze;
 
 my $thisurl = $civs_bin_path."/results@PERLEXT@";
 
@@ -30,16 +31,19 @@ my %algorithms = ('beatpath_winner', 'beatpath', # obsolete
                   'mam', 'rp',
                   'runoff', 'runoff',
                   'minimax', 'minimax',
-                  'votecore', 'votecore');
+                  'votecore', 'votecore',
+                  'cschulze', 'cschulze');
 
 # maps legal algorithm modules to 1
 my %algorithm_modules = ('beatpath2', 1,
                          'rp', 1,
                          'runoff', 1,
                          'minimax', 1,
-                         'votecore', 1);
+                         'votecore', 1,
+                         'cschulze', 1);
 
-my $default_algorithm = 'votecore';
+#my $default_algorithm = 'votecore';
+my $default_algorithm = 'cschulze';
 
 # CheckLoad;
 # timeout(30);
@@ -259,6 +263,7 @@ sub ComputeResults {
     my $minimax_checked = '';
     my $runoff_checked = '';
     my $votecore_checked = '';
+    my $cschluze_checked = '';
     if ($algorithm eq 'civs_ranked_pairs') {
 	$rp_checked = $checked;
     } elsif ($algorithm eq 'mam') {
@@ -271,8 +276,11 @@ sub ComputeResults {
 	$bw_checked = $checked;
     } elsif ($algorithm eq 'votecore') {
 	$votecore_checked = $checked;
+    } elsif ($algorithm eq 'cschluze') {
+	$cschluze_checked = $checked;
     } else {
-	$minimax_checked = $checked; # default
+	$cschluze_checked = $checked;
+	#$minimax_checked = $checked; # default
     }
 
     print RESULTS $tx->Condorcet_completion_rule,
@@ -314,6 +322,12 @@ sub ComputeResults {
 	    value="votecore"',
 	    $votecore_checked,
 	' /> Python-Vote-Core: SchulzeSTV', BR;
+		'<input type="radio"
+	    name="algorithm"
+	    onclick="newSettings()"
+	    value="cschulze"',
+	    $cschulze_checked,
+	' /> CSchulze: SchulzeSTV with proportional representation', BR;
 	print RESULTS '<input type="submit" id="recomplete" value="Update" />';
 
     print RESULTS '</blockquote></form></div>',$cr;
@@ -656,6 +670,69 @@ sub PrintRankingVotecore {
     print RESULTS '</table>', $cr;
 }
 
+sub PrintRankingCSchulze {
+    my @result = @{$_[0]};
+    my @matrix = @{$_[1]};
+    my $had_tie = 0;
+    print RESULTS '<table class="rankings">', $cr;
+    my $j = 0;
+    my $num_seen = 0;
+    for (my $rank = 0; $rank <= $#result; $rank++) {
+	my @winner = @{$result[$rank]};
+	# find the explanatory defeat
+	print RESULTS '<tr><td>'.($j+1).'. ';
+	my $ranksize = $#winner + 1;
+	if ($ranksize > 1) {
+	    print RESULTS $tx->Tied, br, $cr;
+	}
+	    my $tie;
+	if ($num_seen < $num_winners &&
+	    $num_seen + $ranksize > $num_winners) {
+	    $tie = 1;
+	    $had_tie = 1;
+	} else {
+	    $tie = 0;
+	}
+	for (my $i = 0; $i <= $#winner; $i++) {
+	    if ($i > 0) { print RESULTS '<br>', $cr; }
+	    if ($tie) { print RESULTS '<span class=warning>'; }
+	    my $explanation = '';
+	    if ($rank > 0) {
+		for (my $brank = $rank-1; $brank >= 0; $brank--) {
+		    my @pwinners = @{$result[$brank]};
+		    for (my $bi = 0; $bi <= $#pwinners; $bi++) {
+			if ($matrix[$pwinners[$bi]][$winner[$i]] >
+			    $matrix[$winner[$i]][$pwinners[$bi]] &&
+			    $pwinners[$bi] != $condorcet_winner) {
+			    $explanation = $tx->loss_explanation(
+				$choices[$pwinners[$bi]],
+				$matrix[$pwinners[$bi]][$winner[$i]],
+				$matrix[$winner[$i]][$pwinners[$bi]]);
+			    $brank = -1; last;
+			}
+		    }
+		}
+	    } else {
+		if ($winner[$i] == $condorcet_winner) {
+		    $explanation = $tx->Condorcet_winner_explanation;
+		} else {
+		    $explanation = $tx->undefeated_explanation;
+		}
+	    }
+	    if ($num_seen < $num_winners) {
+		print RESULTS b($choices[$winner[$i]]);
+	    } else {
+		print RESULTS $choices[$winner[$i]];
+	    }
+
+	    $choice_rank[$winner[$i]] = $j++;
+	}
+	$num_seen += $#winner + 1;
+	print RESULTS '</td>', $cr, '</tr>', $cr;
+    }
+    print RESULTS '</table>', $cr;
+}
+
 
 sub details_bookmark {
     return a({-name=>"details"}, "");
@@ -716,13 +793,19 @@ sub PrintReport {
           &BallotReport;
           &$print_details($log, $num_choices, \@choices, $ciref);
         &DetailsFooter;
-    } else {
-        &PrintRanking($rref, \@matrix);
+    } else if ($module eq "cschulze") {
+        &PrintRankingCSchulze($rref, \@matrix);
         &DetailsHeader;
-          &PrintMatrix($num_choices, \@matrix, \@choices, $ciref, 0);
           &BallotReport;
           &$print_details($log, $num_choices, \@choices, $ciref);
         &DetailsFooter;
+    } else {
+       &PrintRanking($rref, \@matrix);
+       &DetailsHeader;
+         &PrintMatrix($num_choices, \@matrix, \@choices, $ciref, 0);
+         &BallotReport;
+         &$print_details($log, $num_choices, \@choices, $ciref);
+       &DetailsFooter;
     }
 #    &AdvertisePolls;
 }

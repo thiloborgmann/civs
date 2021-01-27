@@ -14,6 +14,7 @@ civs/cgi-bin/clear_caches
 civs/cgi-bin/close
 civs/cgi-bin/control
 civs/cgi-bin/create_election
+civs/cgi-bin/cschulze.pm
 civs/cgi-bin/delete_election.pl
 civs/cgi-bin/download_ballots
 civs/cgi-bin/dump_election
