@@ -37,6 +37,23 @@ if (param('admin_key') ne '@ADMIN_KEY@') {
     }
 }
 
+if (param('format') eq 'dat') {
+	my $filename = "ballots_$election_id.dat";
+	print header(-type=>'application/text', -attachment=>"$filename");
+
+        $filename = "$election_dir/$filename";
+	my $fh;
+	#if (open($fh, '<:encoding(UTF-8)', $filename)) {
+	if (open($fh, '<', $filename)) {
+		while (my $row = <$fh>) {
+			print $row;
+		}
+	} else {
+		print "Could not open file!";
+	}
+	exit 0;
+}
+
 print header(-type=>'application/text', -attachment=>'civs_ballots.csv');
 
 # print the list of candidate names
@@ -52,8 +69,10 @@ foreach my $voter_key (@voters) {
     my $recorded_vote = $vdata{$voter_key}; 
     print "$recorded_vote\n";
 }
-
 exit 0;
+
+
+
 
 sub error {
     my $msg = shift;

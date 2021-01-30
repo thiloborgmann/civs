@@ -42,8 +42,8 @@ my %algorithm_modules = ('beatpath2', 1,
                          'votecore', 1,
                          'cschulze', 1);
 
-#my $default_algorithm = 'votecore';
-my $default_algorithm = 'cschulze';
+my $OLD_VOTE_CC = 'E_8dc4c448379a9d54'; # these two first votes were yet announced using the
+my $OLD_VOTE_TC = 'E_2b68eda608ba4cea'; # instant runoff completion, so keep it forever like announced
 
 # CheckLoad;
 # timeout(30);
@@ -81,6 +81,14 @@ if (defined($nwin_param) && $nwin_param > 0 &&
     $nwin_param < $num_choices) {
 	$num_winners = 0+$nwin_param;
 }
+
+my $default_algorithm;
+if ($election_id eq "$OLD_VOTE_CC" || $election_id eq "$OLD_VOTE_TC") {
+    $default_algorithm = 'runoff';
+} else {
+    $default_algorithm = 'cschulze';
+}
+
 
 my $algorithm = param('algorithm');
 if (!defined($algorithm) || $algorithm eq '') {
@@ -123,13 +131,13 @@ if ($restrict_results eq 'yes') {
     &election::ReportResultReaders;
 }
 
-if (param('fresh') || param('Compare') ||             # Can force a refresh
+#if (param('fresh') || param('Compare') ||             # Can force a refresh
 
-     ($last_vote_time > $cache_time &&                # Recompute if out of date
-      time() - $cache_time > 15) ||                    # and cache at least 5 sec
+#     ($last_vote_time > $cache_time &&                # Recompute if out of date
+#      time() - $cache_time > 15) ||                    # and cache at least 5 sec
                                                       # old.
 
-     ($last_vote_time eq '' && $cache_time == 0)) {   # Recompute old if no cache
+#     ($last_vote_time eq '' && $cache_time == 0)) {   # Recompute old if no cache
     print "<!-- Computing fresh results -->", $cr;
     &StartProgressMeter;
     my $nonce = &SecureNonce;
@@ -138,9 +146,9 @@ if (param('fresh') || param('Compare') ||             # Can force a refresh
     close (RESULTS);
     rename("$cache_file.$nonce", "$cache_file");
     &ReportCompletion;
-} else {
-    print "<!-- Reusing cached results -->", $cr;
-}
+#} else {
+#    print "<!-- Reusing cached results -->", $cr;
+#}
 
 open (RESULTS, "<$cache_file");
 my $results = do { local $/; <RESULTS> };
@@ -263,71 +271,82 @@ sub ComputeResults {
     my $minimax_checked = '';
     my $runoff_checked = '';
     my $votecore_checked = '';
-    my $cschluze_checked = '';
-    if ($algorithm eq 'civs_ranked_pairs') {
-	$rp_checked = $checked;
-    } elsif ($algorithm eq 'mam') {
-	$mam_checked = $checked;
-    } elsif ($algorithm eq 'runoff') {
-	$runoff_checked = $checked;
-    } elsif ($algorithm eq 'minimax') {
-	$minimax_checked = $checked;
-    } elsif ($algorithm eq 'beatpath') {
-	$bw_checked = $checked;
-    } elsif ($algorithm eq 'votecore') {
-	$votecore_checked = $checked;
-    } elsif ($algorithm eq 'cschluze') {
-	$cschluze_checked = $checked;
-    } else {
-	$cschluze_checked = $checked;
-	#$minimax_checked = $checked; # default
-    }
+    my $cschulze_checked = '';
+#    if ($algorithm eq 'civs_ranked_pairs') {
+#	$rp_checked = $checked;
+#    } elsif ($algorithm eq 'mam') {
+#	$mam_checked = $checked;
+#    } elsif ($algorithm eq 'runoff') {
+#	$runoff_checked = $checked;
+#    } elsif ($algorithm eq 'minimax') {
+#	$minimax_checked = $checked;
+#    } elsif ($algorithm eq 'beatpath') {
+#	$bw_checked = $checked;
+#    } elsif ($algorithm eq 'votecore') {
+#	$votecore_checked = $checked;
+#    } elsif ($algorithm eq 'cschulze') {
+#	$cschulze_checked = $checked;
+#    } else {
+        if ($election_id eq "$OLD_VOTE_CC" || $election_id eq "$OLD_VOTE_TC") {
+            $runoff_checked = $checked;
+        } else {
+	    $cschulze_checked = $checked;
+	    #$minimax_checked = $checked; # default
+	}
+#    }
+
 
     print RESULTS $tx->Condorcet_completion_rule,
 	          $tx->What_is_this($civs_url.'/rp.html'), BR,
-       '<blockquote>',
-	'<input type="radio"
-	    name="algorithm"
-	    onclick="newSettings()"
-	    value="minimax"',
-	    $minimax_checked,
-	' /> Minimax', BR,
-	'<input type="radio"
-	    name="algorithm"
-	    onclick="newSettings()"
-	    value="beatpath" ',
-	    $bw_checked,
-	' /> Schulze/Beatpath/CSSD', BR,
-	'<input type="radio"
-	    name="algorithm"
-	    onclick="newSettings()"
-	    value="civs_ranked_pairs"',
-	    $rp_checked,
-	' /> CIVS Ranked Pairs', BR,
-	'<input type="radio"
-	    name="algorithm"
-	    onclick="newSettings()"
-	    value="mam"',
-	    $mam_checked,
-	' /> MAM', BR,
+       '<blockquote>';
+#      '<input type="radio"
+#          name="algorithm"
+#          onclick="newSettings()"
+#          value="minimax"',
+#          $minimax_checked,
+#      ' /> Minimax', BR,
+#      '<input type="radio"
+#          name="algorithm"
+#          onclick="newSettings()"
+#          value="beatpath" ',
+#          $bw_checked,
+#      ' /> Schulze/Beatpath/CSSD', BR,
+#      '<input type="radio"
+#          name="algorithm"
+#          onclick="newSettings()"
+#          value="civs_ranked_pairs"',
+#          $rp_checked,
+#      ' /> CIVS Ranked Pairs', BR,
+#      '<input type="radio"
+#          name="algorithm"
+#          onclick="newSettings()"
+#          value="mam"',
+#          $mam_checked,
+#      ' /> MAM', BR,
+#      '<input type="radio"
+#          name="algorithm"
+#          onclick="newSettings()"
+#          value="votecore"',
+#          $votecore_checked,
+#      ' /> Python-Vote-Core: SchulzeSTV', BR,
+	
+    if ($election_id eq "$OLD_VOTE_CC" || $election_id eq "$OLD_VOTE_TC") {
+	print RESULTS 
 	'<input type="radio"
 	    name="algorithm"
 	    onclick="newSettings()"
 	    value="runoff"',
 	    $runoff_checked,
-	' /> Condorcet-IRV', BR,
+	' /> CIVS Condorcet with Instant Runoff completion', BR;
+    } else {
+	print RESULTS 
 	'<input type="radio"
-	    name="algorithm"
-	    onclick="newSettings()"
-	    value="votecore"',
-	    $votecore_checked,
-	' /> Python-Vote-Core: SchulzeSTV', BR;
-		'<input type="radio"
 	    name="algorithm"
 	    onclick="newSettings()"
 	    value="cschulze"',
 	    $cschulze_checked,
-	' /> CSchulze: SchulzeSTV with proportional representation', BR;
+	' /> SchulzeSTV with proportional representation', BR;
+    }
 	print RESULTS '<input type="submit" id="recomplete" value="Update" />';
 
     print RESULTS '</blockquote></form></div>',$cr;
@@ -477,6 +496,7 @@ sub BallotReport {
 		    Tr(\@rows));
 	    print RESULTS p($tx->Ballots_are_shown_in_random_order);
 	    print RESULTS p($tx->Download_ballots_as_a_CSV("@PROTO@://$thishost$civs_bin_path/download_ballots@PERLEXT@?id=$election_id"));
+	    print RESULTS p($tx->Download_ballots_as_a_DAT("@PROTO@://$thishost$civs_bin_path/download_ballots@PERLEXT@?id=$election_id&format=dat"));
         } else {
 	    print RESULTS p($tx->No_ballots_were_cast);
 	}
@@ -793,7 +813,7 @@ sub PrintReport {
           &BallotReport;
           &$print_details($log, $num_choices, \@choices, $ciref);
         &DetailsFooter;
-    } else if ($module eq "cschulze") {
+    } elsif ($module eq "cschulze") {
         &PrintRankingCSchulze($rref, \@matrix);
         &DetailsHeader;
           &BallotReport;

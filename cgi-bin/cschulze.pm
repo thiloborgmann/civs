@@ -2,6 +2,7 @@ package cschulze;
 
 use strict;
 use JSON;
+use election;
 use Data::Dumper; # just debugging, remove
 
 # rank_candidates($n, $matrix, $ballots) : construct a ranking of the choices.
@@ -117,65 +118,85 @@ sub rank_candidates {
     my @rankings = ();
     my $log = '<ul>';
 
-    my $py_code = "";
+    my $data = "";
+    my $c_size = 0;
+    my $b_size = 0;
 
-    $py_code .= "from pyvotecore.condorcet import CondorcetHelper;\n";
-    #$py_code .= "from pyvotecore.schulze_pr import SchulzePR;\n";
-    $py_code .= "from pyvotecore.schulze_stv import SchulzeSTV;\n";
-    $py_code .= "ballots = [\n";
+    $c_size = scalar @$choices;
+    $b_size = scalar @$ballots;
 
-    my $c_size = scalar @$choices;
+    $data .= "M $num_winners\n";
+    $data .= "C $c_size\n";
+    $data .= "N $b_size\n";
+    $data .= "F 1\n";
+
+    $data .= "\n";
+    $data .= "# Candidates in order:\n";
+
+    my $letter = 'A';
+
+    foreach my $c (@$choices) {
+        $data .= "X $letter $c\n";
+        $letter++;
+    }
+    
+    $data .= "\n";
+    $data .= "BEGIN\n";
+
+    my $num = 1;
+
     foreach my $b (@$ballots) {
 
-        $py_code .= "{ \"count\":1, \"ballot\":[";
+        $data .= sprintf("%03u", $num);
 
-        my $i = 0;
         foreach my $c (@$b) {
-            if ($i > 0) {
-                $py_code .= ", ";
-            }
-            $py_code .= "[\"$choices->[$c - 1]\"]";
-
-            $i = $i + 1;
+            $data .= sprintf(" %02u", $c);
         }
-        $py_code .= "] },\n";
+
+	$data .= "\n";
+
+        $num = $num + 1;
     }
 
-    $py_code .= "];\n";
-    #$py_code .= "ret = SchulzePR(ballots, winner_threshold=3, ballot_notation = CondorcetHelper.BALLOT_NOTATION_GROUPING).as_json();\n";
-    $py_code .= "ret = SchulzeSTV(ballots, required_winners=$num_winners, ballot_notation = CondorcetHelper.BALLOT_NOTATION_GROUPING).as_json();\n";
-    $py_code .= "print(ret);\n";
+    $data .= "END\n";
 
-    print main::RESULTS "$py_code";
+    my $adata = "";
 
-    my $ret = `echo \'$py_code\'`;
-    #my $ret = `echo \'$py_code\' | python3`;
-    #if ($? != 0) {
-    #    print main::RESULTS "Error calling python ($?)($!)($ret)";
-    #}
+    my $data_file = "$election_dir/ballots_$election_id.dat";
+    my $details_file = "$election_dir/details_$election_id.dat";
+    my $ret = `echo \'$data\' > $data_file`;
+    $ret    = `./cschulze $data_file $details_file`;
+    my $det = `cat $details_file`;
 
-    print main::RESULTS "ret: $ret";
+    print main::RESULTS "<pre>$ret</pre>";
 
-    my $ret_json = decode_json $ret;
-    my %json = %$ret_json;
-
-    #my $ref_order = $json{'order'}; #SchulzePR
-    my $ref_order = $json{'winners'}; #SchulzeSTV
-    my @order = @$ref_order;
-
-    my @rankings_new = ();
-    foreach my $o (@order) {
-        my @rankings_sub = ();
-        my $idx = &get_idx($choices, $o);
-        if ($idx > -1) {
-            push @rankings_sub, $idx;
-        }
-        push @rankings_new, \@rankings_sub;
+    #my $ret = `echo \'$adata\' | python3`;
+    if ($? != 0) {
+        print main::RESULTS "Error calling cschulze ($?)($!)($ret)";
     }
+
+    #print main::RESULTS "ballots written into $data_file";
+
+    #my $ret_json = decode_json $ret;
+    #    my %json = %$ret_json;
+
+    #    #my $ref_order = $json{'order'}; #SchulzePR
+    #    my $ref_order = $json{'winners'}; #SchulzeSTV
+    #    my @order = @$ref_order;
+
+        my @rankings_new = ();
+    #    foreach my $o (@order) {
+    #        my @rankings_sub = ();
+    #        my $idx = &get_idx($choices, $o);
+    #        if ($idx > -1) {
+    #            push @rankings_sub, $idx;
+    #        }
+    #        push @rankings_new, \@rankings_sub;
+    #    }
 
 
     @rankings = @rankings_new;
-    $log = "Python-Vote-Core returned: " . $ret;
+    $log = "<pre>" . $det . "</pre>";
 
     return (\@rankings, $log . '</ul>');
 }
@@ -187,7 +208,13 @@ sub rank_candidates {
 sub print_details {
     (my $log, my $num_choices, my $choices_ref, my $ciref) = @_;
 
-    print main::RESULTS main::p("Candidates in original order: @$choices_ref");
+    print main::RESULTS "Candidates in original order: <pre>";
+    my $letter = 'A';
+    foreach my $c (@$choices_ref) {
+	    print main::RESULTS "$letter: $c\n";
+	    $letter++;
+    }
+    print main::RESULTS "</pre>";
 
     print main::RESULTS main::p($log);
 }

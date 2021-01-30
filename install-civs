@@ -74,6 +74,13 @@ rm $CIVSDATADIR/elections/admission_control $CIVSDATADIR/lockserv
 	< "$f" > "$dest"
     done
 
+    echo -n "building cschulze: "
+    g++ -o cgi-bin/cschulze cgi-bin/cschulze.c && echo OK || echo FAIL
+
+    target="${CGIBINDIR}/cschulze"
+    echo -n "copying cschulze: "
+    cp cgi-bin/cschulze "$target" && echo OK || echo FAIL
+
     echo -n "copying:"
     for f in add_voters beatpath.pm beatpath2.pm civs_common.pm               \
         voting.pm close control create_election download_ballots              \
